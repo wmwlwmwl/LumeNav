@@ -73,18 +73,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 // 建表（幂等）
-                $pdo->exec("CREATE TABLE IF NOT EXISTS nav_links (
+                $pdo->exec("CREATE TABLE IF NOT EXISTS lumenav_links (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   url VARCHAR(500) NOT NULL,
   target TINYINT(1) NOT NULL DEFAULT 1,
   sort INT NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-                $pdo->exec("CREATE TABLE IF NOT EXISTS nav_settings (
+                $pdo->exec("CREATE TABLE IF NOT EXISTS lumenav_settings (
   skey VARCHAR(50) PRIMARY KEY,
   svalue TEXT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-                $pdo->exec("CREATE TABLE IF NOT EXISTS nav_admin (
+                $pdo->exec("CREATE TABLE IF NOT EXISTS lumenav_admin (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(50) NOT NULL UNIQUE,
   password VARCHAR(255) NOT NULL
@@ -103,13 +103,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'theme' => 'default',
                     'admin_dir' => 'admin',
                 ];
-                $st = $pdo->prepare('REPLACE INTO nav_settings (skey, svalue) VALUES (?, ?)');
+                $st = $pdo->prepare('REPLACE INTO lumenav_settings (skey, svalue) VALUES (?, ?)');
                 foreach ($defaults as $k => $v) {
                     $st->execute([$k, $v]);
                 }
 
                 // 管理员账号
-                $pdo->prepare('REPLACE INTO nav_admin (username, password) VALUES (?, ?)')
+                $pdo->prepare('REPLACE INTO lumenav_admin (username, password) VALUES (?, ?)')
                     ->execute([$old['admin_user'], password_hash($pass, PASSWORD_DEFAULT)]);
 
                 // 上传目录
@@ -138,7 +138,7 @@ function settings(): array {
     static $set = null;
     if ($set === null) {
         $set = [];
-        foreach (db()->query('SELECT skey, svalue FROM nav_settings') as $row) {
+        foreach (db()->query('SELECT skey, svalue FROM lumenav_settings') as $row) {
             $set[$row['skey']] = $row['svalue'];
         }
     }

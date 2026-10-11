@@ -12,7 +12,7 @@ if (!file_exists(__DIR__ . '/config.php')) {
 try {
     require __DIR__ . '/config.php';
     $set = settings();
-    $links = db()->query('SELECT name, url, target FROM nav_links ORDER BY sort ASC, id ASC')->fetchAll();
+    $links = db()->query('SELECT name, url, target FROM lumenav_links ORDER BY sort ASC, id ASC')->fetchAll();
 } catch (Throwable $ex) {
     http_response_code(500);
     exit('<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>出错了</title></head><body style="font-family:sans-serif;text-align:center;padding-top:80px;color:#333;"><h2>数据库连接失败</h2><p style="margin-top:12px;">请检查 config.php 中的数据库配置，或确认 MySQL 服务正在运行。</p></body></html>');

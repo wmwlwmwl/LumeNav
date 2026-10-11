@@ -27,7 +27,7 @@
 1. 将程序上传到网站根目录（示例：`C:/lumenav`）
 2. 浏览器访问 `http://你的域名/`，会自动跳转到安装向导
 3. 填写数据库信息（主机 / 端口 / 库名 / 账号 / 密码）、管理员账号、网站名，点击「开始安装」
-4. 安装完成：程序自动建 3 张表（`nav_links` / `nav_settings` / `nav_admin`）、生成 `config.php`、创建 `uploads` 目录
+4. 安装完成：程序自动建 3 张表（`lumenav_links` / `lumenav_settings` / `lumenav_admin`）、生成 `config.php`、创建 `uploads` 目录
 5. **安全建议**：删除根目录下的 `install.php`（已有安装锁，不删也不可重装）
 
 ## 目录结构
@@ -64,10 +64,10 @@ php -r "echo password_hash('新密码', PASSWORD_DEFAULT);"
 ```
 
 ```sql
-UPDATE nav_admin SET password = '上一步输出的哈希' WHERE username = '你的用户名';
+UPDATE lumenav_admin SET password = '上一步输出的哈希' WHERE username = '你的用户名';
 ```
 
-用户名也可直接查表：`SELECT username FROM nav_admin;`
+用户名也可直接查表：`SELECT username FROM lumenav_admin;`
 
 ## 修改后台地址
 

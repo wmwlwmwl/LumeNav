@@ -25,7 +25,7 @@ try {
             . "若你是手动移动/重命名了后台目录，二选一恢复：\r\n"
             . "1) 把目录名改回「" . trim((string)(settings()['admin_dir'] ?? 'admin')) . "」；\r\n"
             . "2) 或执行 SQL，把激活目录名同步为当前目录名：\r\n"
-            . "   UPDATE nav_settings SET svalue = '" . basename(__DIR__) . "' WHERE skey = 'admin_dir';");
+            . "   UPDATE lumenav_settings SET svalue = '" . basename(__DIR__) . "' WHERE skey = 'admin_dir';");
     }
 } catch (Throwable $ex) {
     http_response_code(500);
@@ -105,7 +105,7 @@ function handle_upload(string $field, string &$err): ?string
 
 function set_setting(string $k, string $v): void
 {
-    db()->prepare('REPLACE INTO nav_settings (skey, svalue) VALUES (?, ?)')->execute([$k, $v]);
+    db()->prepare('REPLACE INTO lumenav_settings (skey, svalue) VALUES (?, ?)')->execute([$k, $v]);
 }
 
 /** 清除/替换设置时，删除其引用的本地上传图片（外链不动；两处共用同一文件时不删） */
@@ -153,7 +153,7 @@ $logged = !empty($_SESSION['admin_id']);
 if (!$logged && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['act'] ?? '') === 'login') {
     check_csrf();
     try {
-        $st = db()->prepare('SELECT id, username, password FROM nav_admin WHERE username = ?');
+        $st = db()->prepare('SELECT id, username, password FROM lumenav_admin WHERE username = ?');
         $st->execute([trim((string)($_POST['username'] ?? ''))]);
         $row = $st->fetch();
         if ($row && password_verify((string)($_POST['password'] ?? ''), $row['password'])) {
@@ -234,7 +234,7 @@ if (!$logged) {
                 } elseif (!check_nav_url($url)) {
                     flash('网址需以 http:// 或 https:// 开头', true);
                 } else {
-                    db()->prepare('INSERT INTO nav_links (name, url, target, sort) VALUES (?, ?, ?, ?)')
+                    db()->prepare('INSERT INTO lumenav_links (name, url, target, sort) VALUES (?, ?, ?, ?)')
                         ->execute([$name, $url, isset($_POST['target']) ? 1 : 0, (int)($_POST['sort'] ?? 0)]);
                     flash('链接已添加');
                 }
@@ -251,7 +251,7 @@ if (!$logged) {
                 } elseif (!check_nav_url($url)) {
                     flash('网址需以 http:// 或 https:// 开头', true);
                 } else {
-                    db()->prepare('UPDATE nav_links SET name = ?, url = ?, target = ?, sort = ? WHERE id = ?')
+                    db()->prepare('UPDATE lumenav_links SET name = ?, url = ?, target = ?, sort = ? WHERE id = ?')
                         ->execute([$name, $url, isset($_POST['target']) ? 1 : 0, (int)($_POST['sort'] ?? 0), $id]);
                     flash('链接已修改');
                 }
@@ -260,7 +260,7 @@ if (!$logged) {
             }
 
             if ($p === 'links' && $act === 'del_link') {
-                db()->prepare('DELETE FROM nav_links WHERE id = ?')->execute([(int)($_POST['id'] ?? 0)]);
+                db()->prepare('DELETE FROM lumenav_links WHERE id = ?')->execute([(int)($_POST['id'] ?? 0)]);
                 flash('链接已删除');
                 header('Location: ' . ADMIN_SELF . '?p=links');
                 exit;
@@ -268,7 +268,7 @@ if (!$logged) {
 
             if ($p === 'account' && $act === 'change_user') {
                 $name = trim((string)($_POST['new_user'] ?? ''));
-                $st = db()->prepare('SELECT password FROM nav_admin WHERE id = ?');
+                $st = db()->prepare('SELECT password FROM lumenav_admin WHERE id = ?');
                 $st->execute([$_SESSION['admin_id']]);
                 $row = $st->fetch();
                 if (!$row || !password_verify((string)($_POST['pwd'] ?? ''), (string)$row['password'])) {
@@ -276,12 +276,12 @@ if (!$logged) {
                 } elseif (mb_strlen($name) < 2 || mb_strlen($name) > 50) {
                     flash('用户名长度需在 2~50 个字符之间', true);
                 } else {
-                    $st = db()->prepare('SELECT id FROM nav_admin WHERE username = ? AND id != ?');
+                    $st = db()->prepare('SELECT id FROM lumenav_admin WHERE username = ? AND id != ?');
                     $st->execute([$name, $_SESSION['admin_id']]);
                     if ($st->fetch()) {
                         flash('该用户名已被使用', true);
                     } else {
-                        db()->prepare('UPDATE nav_admin SET username = ? WHERE id = ?')
+                        db()->prepare('UPDATE lumenav_admin SET username = ? WHERE id = ?')
                             ->execute([$name, $_SESSION['admin_id']]);
                         $_SESSION['admin_name'] = $name;
                         flash('用户名已修改');
@@ -295,7 +295,7 @@ if (!$logged) {
                 $oldP = (string)($_POST['old_pass'] ?? '');
                 $newP = (string)($_POST['new_pass'] ?? '');
                 $newP2 = (string)($_POST['new_pass2'] ?? '');
-                $st = db()->prepare('SELECT password FROM nav_admin WHERE id = ?');
+                $st = db()->prepare('SELECT password FROM lumenav_admin WHERE id = ?');
                 $st->execute([$_SESSION['admin_id']]);
                 $row = $st->fetch();
                 if (!$row || !password_verify($oldP, (string)$row['password'])) {
@@ -305,7 +305,7 @@ if (!$logged) {
                 } elseif ($newP !== $newP2) {
                     flash('两次输入的新密码不一致', true);
                 } else {
-                    db()->prepare('UPDATE nav_admin SET password = ? WHERE id = ?')
+                    db()->prepare('UPDATE lumenav_admin SET password = ? WHERE id = ?')
                         ->execute([password_hash($newP, PASSWORD_DEFAULT), $_SESSION['admin_id']]);
                     flash('密码已修改');
                 }
@@ -315,7 +315,7 @@ if (!$logged) {
 
             if ($p === 'account' && $act === 'rename_admin') {
                 $newDir = strtolower(trim((string)($_POST['new_dir'] ?? '')));
-                $st = db()->prepare('SELECT password FROM nav_admin WHERE id = ?');
+                $st = db()->prepare('SELECT password FROM lumenav_admin WHERE id = ?');
                 $st->execute([$_SESSION['admin_id']]);
                 $row = $st->fetch();
                 if (!$row || !password_verify((string)($_POST['pwd'] ?? ''), (string)$row['password'])) {
@@ -361,7 +361,7 @@ if (!$logged) {
 
 $flashes = take_flashes();
 $set = $logged ? settings() : [];
-$links = $logged ? db()->query('SELECT * FROM nav_links ORDER BY sort ASC, id ASC')->fetchAll() : [];
+$links = $logged ? db()->query('SELECT * FROM lumenav_links ORDER BY sort ASC, id ASC')->fetchAll() : [];
 
 // 扫描可用主题（template/<名>/index.php），theme.ini 提供元数据
 $themes = [];
