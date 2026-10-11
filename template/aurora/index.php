@@ -89,6 +89,7 @@ function aurora_host(string $url): string
                 </li>
                 <?php endforeach; ?>
             </ul>
+            <p class="empty" id="noMatch" style="display:none;">没有匹配的导航</p>
 <?php endif; ?>
         </main>
 
@@ -111,6 +112,24 @@ function aurora_host(string $url): string
                 f.querySelector('input[type=text]').name = this.dataset.q;
             });
         });
+
+        // 输入时实时过滤已添加的导航（名称/域名包含关键词即显示）
+        var searchInput = document.querySelector('.search input[type=text]');
+        var navItems = document.querySelectorAll('.cards li');
+        var noMatch = document.getElementById('noMatch');
+        if (searchInput && navItems.length) {
+            searchInput.addEventListener('input', function () {
+                var q = this.value.trim().toLowerCase();
+                var shown = 0;
+                navItems.forEach(function (li) {
+                    if (q !== '') { li.style.animation = 'none'; } // 过滤时关闭入场动画，避免逐键闪烁
+                    var hit = q === '' || li.textContent.toLowerCase().indexOf(q) !== -1;
+                    li.style.display = hit ? '' : 'none';
+                    if (hit) shown++;
+                });
+                if (noMatch) noMatch.style.display = shown ? 'none' : '';
+            });
+        }
     </script>
 </body>
 </html>

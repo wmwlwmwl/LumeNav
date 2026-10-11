@@ -133,6 +133,12 @@ function asset(string $v): string
     return ($v === '' || str_starts_with($v, 'http') || str_starts_with($v, '/')) ? $v : '../' . $v;
 }
 
+/** 校验导航链接：必须带 http:// 或 https:// 协议头（拦住 javascript: 等伪协议与裸域名） */
+function check_nav_url(string $url): bool
+{
+    return (bool)preg_match('#^https?://#i', $url);
+}
+
 // 登出
 if (($_GET['action'] ?? '') === 'logout') {
     $_SESSION = [];
@@ -225,6 +231,8 @@ if (!$logged) {
                 $url = trim((string)($_POST['url'] ?? ''));
                 if ($name === '' || $url === '') {
                     flash('名称和网址不能为空', true);
+                } elseif (!check_nav_url($url)) {
+                    flash('网址需以 http:// 或 https:// 开头', true);
                 } else {
                     db()->prepare('INSERT INTO nav_links (name, url, target, sort) VALUES (?, ?, ?, ?)')
                         ->execute([$name, $url, isset($_POST['target']) ? 1 : 0, (int)($_POST['sort'] ?? 0)]);
@@ -240,6 +248,8 @@ if (!$logged) {
                 $url = trim((string)($_POST['url'] ?? ''));
                 if ($id <= 0 || $name === '' || $url === '') {
                     flash('参数不完整，修改失败', true);
+                } elseif (!check_nav_url($url)) {
+                    flash('网址需以 http:// 或 https:// 开头', true);
                 } else {
                     db()->prepare('UPDATE nav_links SET name = ?, url = ?, target = ?, sort = ? WHERE id = ?')
                         ->execute([$name, $url, isset($_POST['target']) ? 1 : 0, (int)($_POST['sort'] ?? 0), $id]);
@@ -608,7 +618,7 @@ if (!isset($themes[$currentTheme])) {
                 </div>
                 <div class="col wide">
                     <label>网址</label>
-                    <input type="text" name="url" placeholder="https://example.com" required>
+                    <input type="text" name="url" placeholder="https://example.com" pattern="https?://.+" title="需以 http:// 或 https:// 开头" required>
                 </div>
                 <div class="small">
                     <label>排序（小在前）</label>
@@ -628,6 +638,7 @@ if (!isset($themes[$currentTheme])) {
 <?php if (!$links): ?>
         <p class="empty">还没有导航链接，先在上方添加一条吧。</p>
 <?php else: ?>
+        <input type="text" id="linkSearch" placeholder="输入名称或网址筛选…" autocomplete="off">
         <?php foreach ($links as $l): ?>
         <div class="link-item">
             <form method="post" action="<?php echo ADMIN_SELF; ?>?p=links">
@@ -641,7 +652,7 @@ if (!isset($themes[$currentTheme])) {
                     </div>
                     <div class="col wide">
                         <label>网址</label>
-                        <input type="text" name="url" value="<?php echo e($l['url']); ?>" required>
+                        <input type="text" name="url" value="<?php echo e($l['url']); ?>" pattern="https?://.+" title="需以 http:// 或 https:// 开头" required>
                     </div>
                     <div class="small">
                         <label>排序</label>
@@ -665,6 +676,28 @@ if (!isset($themes[$currentTheme])) {
             </form>
         </div>
         <?php endforeach; ?>
+        <p class="empty" id="linkEmpty" style="display:none;">没有匹配的链接</p>
+        <script>
+            // 输入时按名称/网址筛选链接列表
+            (function () {
+                var box = document.getElementById('linkSearch');
+                var items = document.querySelectorAll('.link-item');
+                var empty = document.getElementById('linkEmpty');
+                if (!box || !items.length) return;
+                box.addEventListener('input', function () {
+                    var q = this.value.trim().toLowerCase();
+                    var shown = 0;
+                    items.forEach(function (el) {
+                        var txt = '';
+                        el.querySelectorAll('input[type=text]').forEach(function (i) { txt += i.value + ' '; });
+                        var hit = q === '' || txt.toLowerCase().indexOf(q) !== -1;
+                        el.style.display = hit ? '' : 'none';
+                        if (hit) shown++;
+                    });
+                    if (empty) empty.style.display = (q !== '' && !shown) ? '' : 'none';
+                });
+            })();
+        </script>
 <?php endif; ?>
     </div>
 <?php endif; ?>
